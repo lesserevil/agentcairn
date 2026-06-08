@@ -55,4 +55,4 @@ Learning from [basic-memory](https://github.com/basicmachines-co/basic-memory) (
 
 ## License
 
-TBD.
+[Apache License 2.0](LICENSE) — permissive, with an explicit patent grant. Copyright © 2026 Charles C. Figueiredo.

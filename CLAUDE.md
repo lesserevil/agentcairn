@@ -28,8 +28,8 @@ Closest competitor is `rohitg00/agentmemory` (it already has hybrid+graph, local
 ## Conventions
 - Specs/designs → `docs/specs/` (date-prefixed `YYYY-MM-DD-<topic>-design.md`). No `superpowers/` segment.
 - `README.md` is the public positioning doc — advantages framed as design goals until validated.
+- **License: Apache-2.0.** Start each source file with `# SPDX-License-Identifier: Apache-2.0`; keep `NOTICE` intact and propagate it in distributions; set `license = "Apache-2.0"` in `pyproject.toml` when scaffolding.
 
 ## Open items
-- Choose an OSS license (currently TBD).
 - Validate large-vault HNSW rebuild / MCP cold-start latency (sets in-memory-vs-persisted threshold).
 - Validate the local embedding baseline on a QA-style metric, not just R@5.
