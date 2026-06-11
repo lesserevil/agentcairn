@@ -79,6 +79,8 @@ def test_json_writer_rejects_malformed_without_clobber(tmp_path):
     with pytest.raises(ValueError):
         write_json_mcp(p, _ENTRY)
     assert p.read_text() == "{ not json"  # original untouched
+    bak = p.with_name("mcp.json.bak")
+    assert bak.exists() and bak.read_text() == "{ not json"  # backed up before erroring
 
 
 def test_write_host_dispatches_json(tmp_path):
@@ -150,3 +152,27 @@ def test_json_writer_no_tmp_left_behind(tmp_path):
     p = tmp_path / "mcp.json"
     write_json_mcp(p, _ENTRY)
     assert not p.with_name("mcp.json.tmp").exists()  # atomic-rename cleaned up
+
+
+def test_codex_writer_rejects_malformed_but_backs_up(tmp_path):
+    from cairn.hosts.writers import write_codex_toml
+
+    p = tmp_path / "config.toml"
+    p.write_text("this = = = not toml")
+    import pytest
+
+    with pytest.raises(ValueError):
+        write_codex_toml(p, _ENTRY)
+    assert p.read_text() == "this = = = not toml"  # original untouched
+    bak = p.with_name("config.toml.bak")
+    assert bak.exists() and bak.read_text() == "this = = = not toml"  # backed up first
+
+
+def test_dry_run_creates_no_backup(tmp_path):
+    from cairn.hosts.writers import write_codex_toml
+
+    p = tmp_path / "config.toml"
+    p.write_text('model = "gpt-5"\n')
+    write_json_mcp(tmp_path / "mcp.json", _ENTRY, dry=True)
+    write_codex_toml(p, _ENTRY, dry=True)
+    assert not p.with_name("config.toml.bak").exists()  # dry must not back up

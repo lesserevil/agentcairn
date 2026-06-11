@@ -32,6 +32,8 @@ def write_json_mcp(path: Path, entry: dict, *, dry: bool = False) -> str:
     content. Returns the rendered content (dry) or a write summary."""
     data: dict = {}
     if path.exists():
+        if not dry:
+            _backup(path)  # snapshot before we risk raising on a malformed config
         try:
             data = json.loads(path.read_text(encoding="utf-8") or "{}")
         except json.JSONDecodeError as e:
@@ -46,7 +48,6 @@ def write_json_mcp(path: Path, entry: dict, *, dry: bool = False) -> str:
     if dry:
         return rendered
     path.parent.mkdir(parents=True, exist_ok=True)
-    _backup(path)
     _atomic_write(path, rendered)
     return f"wrote agentcairn → {path}"
 
@@ -65,6 +66,8 @@ def write_codex_toml(path: Path, entry: dict, *, dry: bool = False) -> str:
     other tables and comments (tomlkit round-trips)."""
     doc = tomlkit.document()
     if path.exists():
+        if not dry:
+            _backup(path)  # snapshot before we risk raising on a malformed config
         try:
             doc = tomlkit.parse(path.read_text(encoding="utf-8"))
         except Exception as e:  # tomlkit raises ParseError/ValueError variants
@@ -85,6 +88,5 @@ def write_codex_toml(path: Path, entry: dict, *, dry: bool = False) -> str:
     if dry:
         return rendered
     path.parent.mkdir(parents=True, exist_ok=True)
-    _backup(path)
     _atomic_write(path, rendered)
     return f"wrote [mcp_servers.agentcairn] → {path}"
