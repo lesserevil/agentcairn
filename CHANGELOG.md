@@ -5,6 +5,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning: [S
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-06-14
+
+### Added
+- **Antigravity is now a first-class plugin host** (alongside Claude Code and Codex). The plugin bundles the MCP server (recall/search/`remember`) and reuses the `using-agentcairn-memory` skill, packaged at the plugin root as `plugin.json` + `mcp_config.json` (Antigravity's manifest lives at the root and auto-discovers a wrapper-form `mcp_config.json` with `CAIRN_VAULT` set). `cairn install antigravity --source <dir>` installs it via `agy plugin install`. Antigravity has no recognized plugin hooks, so ambient capture stays out-of-band via `cairn sweep` (its transcripts are ingested since 0.13.0).
+
+### Changed
+- **`cairn install` reclassifies `antigravity` from an MCP host to a plugin host.** It shells `agy plugin install <source>` and, after a successful install, removes any stale `mcpServers.agentcairn` entry from `~/.gemini/config/mcp_config.json` (backup-first) so the bundled plugin MCP isn't double-registered — the same "only bundle" rule as Codex. Because `agy plugin install` accepts a local directory or a registered marketplace (not a git repo), Antigravity **requires** `--source <dir>` and errors clearly otherwise; Codex/Claude Code keep defaulting to the `ccf/agentcairn` marketplace.
+
 ## [0.13.0] - 2026-06-14
 
 ### Added
