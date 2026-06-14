@@ -5,6 +5,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning: [S
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-06-14
+
+### Added
+- **agentcairn is now a first-class Codex plugin** (alongside the Claude Code plugin). It bundles the MCP server (recall/search/`remember`), reuses the `using-agentcairn-memory` skill, and ships session hooks — installable from the Codex marketplace (`codex plugin marketplace add ccf/agentcairn && codex plugin add agentcairn@agentcairn`) or via `cairn install codex`. The Codex `.mcp.json` is a bare server map and sets `CAIRN_VAULT` explicitly (the MCP server has no vault default). Dogfood-verified: `codex mcp list` shows the bundled server registered and enabled.
+
+### Changed
+- **`cairn install` routes by host kind.** Plugin hosts (`claude-code`, `codex`) install the *plugin* by shelling to the host's own CLI — the MCP server is bundled in the plugin, never written to a config file — so a host with a plugin can't end up double-registering the MCP server. MCP hosts (`cursor`, `claude-desktop`, `vscode`, `gemini`, `antigravity`) still get a written MCP config as before. `cairn install codex` additionally removes any stale `[mcp_servers.agentcairn]` block from `~/.codex/config.toml` (only after a successful plugin install, so an aborted install never leaves you without memory). New `--source` flag overrides the plugin marketplace source (default `ccf/agentcairn`).
+
 ## [0.11.0] - 2026-06-13
 
 ### Added
