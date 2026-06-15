@@ -5,6 +5,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning: [S
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-06-15
+
+### Added
+- **Provenance-aware recall (#28).** Memory notes now carry their origin — `project` (the repo/working-dir name) and `harness` — in frontmatter and the index, threaded end-to-end from the ingest event through distillation. At recall time the current project's memories are **boosted ×1.4** (alongside the existing graph ×1.2 / validity ×0.5 multipliers, and re-applied on the rerank path) so they lead, while cross-project memories still surface — a single global vault stays the default and nothing is hidden. The current project is resolved from an explicit `project` argument, else the caller's working directory (`os.getcwd()`), else none (no boost). Cross-project hits are marked `[from: <project>]` (CLI) / `cross_project: true` (MCP). An optional hard scope — `recall/search --scope project` (CLI) or `scope="project"` (MCP `search`/`recall` tools) — limits results to the current project only; with no resolved project it logs a warning and falls back to boosting-only. The DuckDB `notes` table gains nullable `project`/`harness` columns via an additive migration (the index is a rebuildable cache); existing notes without provenance get `NULL` (no boost, still surface). Provenance applies going-forward — old notes are not backfilled. Out of scope (issue #28 half 2): separate/scoped vaults, shared-vault multi-user attribution, and `git_branch`.
+
 ## [0.15.0] - 2026-06-15
 
 ### Added
