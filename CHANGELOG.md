@@ -5,6 +5,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning: [S
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-06-16
+
+### Added
+- **Compaction summaries are now captured as `session-summary` memories.** When a coding-agent session overflows its context, the harness writes a dense, model-generated summary of the session so far (Claude Code's `isCompactSummary` record; Codex similarly). agentcairn already recognized these (`EventKind.COMPACT_SUMMARY`) but dropped them — now the **latest** compaction per session is captured as one verbatim, project-stamped `session-summary` note. These bypass the durability judge (compaction is itself the substance signal) but are still **redacted** and deduped, are clearly marked **model-generated** (`kind: session-summary`), carry full `project`/`harness`/session provenance (so they flow into provenance-aware recall and the Obsidian plugin's currency/provenance view), and are **excluded from cosine consolidation** so a session synthesis can never supersede a user-asserted memory. One *current* summary per session: a newer compaction supersedes the prior note (`superseded_by`, non-lossy, timestamp-guarded). Scope: Claude Code + Codex (the harnesses that emit compaction summaries); user-prompt capture is unchanged. Out of scope (future): atomic extraction from summaries, Cursor/Antigravity.
+
 ## [0.16.0] - 2026-06-15
 
 ### Added
