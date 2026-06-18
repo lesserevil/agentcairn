@@ -5,6 +5,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning: [S
 
 ## [Unreleased]
 
+## [0.20.1] - 2026-06-18
+
 ### Fixed
 - **Plugin recall outage from the 0.18 index migration.** The bundled plugin manifests still pinned
   `CAIRN_INDEX` to the old global index path that 0.18 rehomed away, so the plugin MCP server failed
