@@ -144,6 +144,39 @@ def test_sync_turn_buffers(provider):
     assert len(provider._buffers["s9"]) == 2
 
 
+def test_capture_every_turn_persists_and_clears_buffer(provider):
+    provider._capture_every_turn = True
+    provider.sync_turn(
+        "Decision: production always runs in us-east-1 because customers are nearby.",
+        "Understood, noted.",
+        session_id="live-gateway",
+    )
+    assert provider._buffers["live-gateway"] == []
+    assert "us-east-1" in provider.prefetch("where does production run?")
+
+
+def test_capture_every_turn_retains_buffer_after_failure(provider, monkeypatch):
+    provider._capture_every_turn = True
+    monkeypatch.setattr(provider, "_capture", lambda messages, session_id: False)
+    provider.sync_turn("A durable decision with enough detail to retain.", "Noted.")
+    assert len(provider._buffers["sess-1"]) == 2
+
+
+def test_non_primary_context_does_not_write(tmp_path, monkeypatch):
+    monkeypatch.setenv("CAIRN_VAULT", str(tmp_path / "vault"))
+    mod = load_plugin()
+    p = mod.CairnMemoryProvider()
+    p.initialize(
+        "cron-session",
+        hermes_home=str(tmp_path / "hhome"),
+        agent_context="cron",
+    )
+    p.sync_turn("Cron system prompt that must not become memory.", "Done.")
+    assert p._buffers == {}
+    result = p.handle_tool_call("memory_save", {"text": "must not be saved"})
+    assert "disabled" in result["error"]
+
+
 def test_get_config_schema_declares_fields(provider):
     keys = {f["key"] for f in provider.get_config_schema()}
     assert {"vault_path", "embedder", "rerank"} <= keys
@@ -228,3 +261,19 @@ def test_on_session_end_none_is_failsafe(provider):
     # Hermes may hand us None; list(None) would raise outside the capture wrapper.
     provider.on_session_end(None)  # must NOT raise
     provider.shutdown()
+
+
+def test_on_session_switch_flushes_old_session(provider):
+    provider.sync_turn(_DURABLE, "Understood, noted.", session_id="old-session")
+    provider.on_session_switch("new-session", parent_session_id="old-session")
+    provider.shutdown()
+    assert provider._session_id == "new-session"
+    assert provider._buffers == {}
+    assert "make ship" in provider.prefetch("how do we deploy?")
+
+
+def test_on_pre_compress_persists_buffered_context(provider):
+    provider.sync_turn(_DURABLE, "Understood, noted.")
+    assert provider.on_pre_compress([]) == ""
+    assert provider._buffers == {}
+    assert "make ship" in provider.prefetch("how do we deploy?")

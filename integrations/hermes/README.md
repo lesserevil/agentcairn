@@ -23,10 +23,10 @@ agentcairn is a [Hermes](https://github.com/hermesagent/hermes) `MemoryProvider`
 
 ```bash
 # 1. Install agentcairn into Hermes's Python environment
-pip install agentcairn
+uv pip install agentcairn
 
 # 2. Copy the plugin
-cp -r integrations/hermes ~/.hermes/plugins/memory/agentcairn
+cp -r integrations/hermes ~/.hermes/plugins/agentcairn
 
 # 3. Register it
 hermes memory setup agentcairn
@@ -41,6 +41,8 @@ Configure via Hermes's plugin config mechanism. All keys are optional.
 | `vault_path` | `~/agentcairn` (or `$CAIRN_VAULT`) | Path to your Obsidian vault. Shared with Claude Code / Codex / Cursor if you use those. |
 | `embedder` | `fastembed` | Embedding backend. `fastembed` (local, no key) or `ollama`. |
 | `rerank` | `false` | Enable cross-encoder reranking on recall results for higher precision. |
+| `k` | `5` | Number of memories to inject before each turn. |
+| `capture_every_turn` | `false` | Persist each completed turn immediately. Recommended for long-lived gateway/bot sessions. |
 
 **No secrets are required by default.** Storage is local. Session-end auto-capture uses agentcairn's **local extractive distiller** — fast, fully local, no API key required — with the same importance gate and redaction pipeline as normal agentcairn capture.
 
@@ -61,4 +63,6 @@ cairn reindex --vault ~/agentcairn
 ## Notes
 
 - Capture is fail-safe: an error during `on_session_end` logs `[agentcairn] capture failed (dropped): ...` to stderr and is silently dropped. It never raises into Hermes.
+- Hermes user memory providers are discovered directly under `$HERMES_HOME/plugins/<name>`; do not add an extra `memory/` directory below the user plugin path.
+- Set `capture_every_turn` for always-on gateways. Hermes runs `sync_turn` on a background worker, so durable capture does not hold the user-visible response open.
 - This plugin targets the Hermes MemoryProvider API as documented in 2026-06. The Hermes plugin API is still evolving; a version pin or update may be needed as it stabilizes.
