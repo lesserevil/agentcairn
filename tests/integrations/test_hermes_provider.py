@@ -59,6 +59,37 @@ def test_prefetch_empty_vault_is_safe(provider):
     assert isinstance(provider.prefetch("anything"), str)
 
 
+def test_concurrent_prefetch_serializes_duckdb_access(provider, monkeypatch):
+    import threading
+    import time
+
+    import cairn.mcp.tools as tools
+
+    provider._index_current = True
+    active = 0
+    max_active = 0
+    counter_lock = threading.Lock()
+
+    def fake_recall(*args, **kwargs):
+        nonlocal active, max_active
+        with counter_lock:
+            active += 1
+            max_active = max(max_active, active)
+        time.sleep(0.05)
+        with counter_lock:
+            active -= 1
+        return {"notes": []}
+
+    monkeypatch.setattr(tools, "recall_tool", fake_recall)
+    threads = [threading.Thread(target=provider.prefetch, args=(f"query {i}",)) for i in range(2)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert max_active == 1
+
+
 def test_tool_schemas_declare_three_tools(provider):
     names = {t["name"] for t in provider.get_tool_schemas()}
     assert {"memory_save", "memory_recall", "memory_search"} <= names

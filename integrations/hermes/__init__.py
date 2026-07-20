@@ -72,12 +72,11 @@ def _resolve(cfg: dict):
     return vault, index, embedder
 
 
-# Single lock serializing ALL vault writes (ingest + reindex). The two writers — the
-# _capture daemon thread and a synchronous memory_save — must not race the dedup ledger
-# or run overlapping open_index/reconcile (DuckDB is single-writer). Each writer holds
-# this lock around its whole write+reindex, so _reindex below must stay lock-free to
-# avoid a re-entrant deadlock; the only callers (_capture, memory_save) already hold it.
-_WRITE_LOCK = threading.Lock()
+# Single lock serializing all DuckDB access for this provider. DuckDB's read-only
+# ATTACH path can conflict when two Hermes agent turns recall concurrently in the
+# same process, and reads must not overlap a reindex writer either. This is an RLock
+# because prefetch holds it while _ensure_current may acquire it again.
+_WRITE_LOCK = threading.RLock()
 
 
 def _reindex(vault: Path, embedder: str) -> None:
@@ -219,17 +218,18 @@ class CairnMemoryProvider(_base()):
             from cairn.ingest.events import project_from_cwd
             from cairn.mcp.tools import recall_tool
 
-            self._ensure_current()
-            project = project_from_cwd(self._cwd)
-            res = recall_tool(
-                self._index,
-                query,
-                embedder=self._embedder,
-                k=getattr(self, "_k", 5),
-                rerank=self._rerank,
-                project=project,
-                scope=resolve_auto_recall_scope(),
-            )
+            with _WRITE_LOCK:
+                self._ensure_current()
+                project = project_from_cwd(self._cwd)
+                res = recall_tool(
+                    self._index,
+                    query,
+                    embedder=self._embedder,
+                    k=getattr(self, "_k", 5),
+                    rerank=self._rerank,
+                    project=project,
+                    scope=resolve_auto_recall_scope(),
+                )
             notes = res.get("notes") or []
             return _format_untrusted_memories(notes)
         except Exception as e:
